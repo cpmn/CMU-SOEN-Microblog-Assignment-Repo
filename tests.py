@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 import unittest
 from app import create_app, db
-from app.models import User, Post
+from app.models import User, Post, Message
 from config import Config
 
 
@@ -17,7 +17,8 @@ class UserModelCase(unittest.TestCase):
         self.app = create_app(TestConfig)
         self.app_context = self.app.app_context()
         self.app_context.push()
-        db.create_all()
+        db.create_all()        
+
 
     def tearDown(self):
         db.session.remove()
@@ -96,6 +97,34 @@ class UserModelCase(unittest.TestCase):
         self.assertEqual(f2, [p2, p3])
         self.assertEqual(f3, [p3, p4])
         self.assertEqual(f4, [p4])
+    
+    def test_login_user(self):
+        # add a user for testing
+        user = User(username='user01', email='user01@test.com')
+        user.set_password('secretPwd01')
+
+        db.session.add(user)
+        db.session.commit()
+        
+        self.assertTrue( user.check_password('secretPwd01'), "Password is not True")
+        
+
+    def test_new_messages(self):
+        # create four users
+        u1 = User(username='john', email='john@example.com')
+        u2 = User(username='susan', email='susan@example.com')
+        u3 = User(username='mary', email='mary@example.com')
+        u4 = User(username='david', email='david@example.com')
+        db.session.add_all([u1, u2, u3, u4])
+
+        m1 = Message(sender_id=u2.id, recipient=u1, body="hello")
+        m2 = Message(sender_id=u2.id, recipient=u1, body="how are you")
+        m3 = Message(sender_id=u3.id, recipient=u1, body="whats up")
+        m4 = Message(sender_id=u4.id, recipient=u1, body="how's it going")
+        db.session.add_all([m1, m2, m3, m4])
+        db.session.commit()
+        
+        self.assertEqual(4, u1.new_messages())
 
 
 if __name__ == '__main__':
