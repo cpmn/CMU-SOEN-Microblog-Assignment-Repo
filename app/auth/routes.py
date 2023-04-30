@@ -10,20 +10,28 @@ from app.auth.forms import LoginForm, RegistrationForm, \
 from app.models import User
 from app.auth.email import send_password_reset_email
 
-import logging
-logging.basicConfig(filename='std.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+# import logging
+#logging.basicConfig(filename='std.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+#logger = logging.getLogger()
+#logger.setLevel(logging.DEBUG)
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
+    isEmail = False
     form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
+    if form.validate_on_submit():        
+        user = User.query.filter_by(username=form.username.data).first()        
+        if user is None:
+            user = User.query.filter_by(email=form.username.data).first()
+            isEmail = True
+        
         if user is None or not user.check_password(form.password.data):
-            flash(_('Invalid username or password'))
+            if isEmail:
+                flash(_('Please format your email address correctly.'))
+            else:
+                flash(_('Invalid username or password'))            
             return redirect(url_for('auth.login'))
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
@@ -46,8 +54,8 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(username=form.username.data, email=form.email.data)
-        if form.password.data.isalpha():
-            logger.info("Password does not contain numbers")
+        #if form.password.data.isalpha():
+         #   logger.info("Password does not contain numbers")
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
