@@ -10,6 +10,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import redis
 import rq
+import requests
 from app import db, login
 from app.search import add_to_index, remove_from_index, query_index
 
@@ -125,9 +126,12 @@ class User(UserMixin, PaginatedAPIMixin, db.Model):
 
     def avatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
-        return 'http://localhost:5001/images/{}/size/{}'.format(digest, size)
-        # return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
-        #     digest, size)
+        try:
+            response = requests.get('http://localhost:5001/')
+            if response.status_code == 200:
+                return 'http://localhost:5001/images/{}/size/{}'.format(digest, size)
+        except:
+             return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)
 
     def follow(self, user):
         if not self.is_following(user):
